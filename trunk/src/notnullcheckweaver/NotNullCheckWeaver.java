@@ -113,8 +113,9 @@ class NotNullClassFileTransformer implements ClassFileTransformer {
             ClassVisitor adapter = new NotNullClassAdapter(writer, inspector);
             reader2.accept(adapter, 0);
             byte[] result = writer.toByteArray();
+            /*
             try {
-                FileOutputStream fos = new FileOutputStream("C:\\Users\\Bart\\Desktop\\" + className.replace('/', '_') + ".class");
+                FileOutputStream fos = new FileOutputStream(className.replace('/', '_') + ".class");
                 fos.write(result);
                 fos.close();
             } catch (FileNotFoundException e) {
@@ -122,6 +123,7 @@ class NotNullClassFileTransformer implements ClassFileTransformer {
             } catch (IOException e) {
                 throw new RuntimeException(e);
             }
+            */
             return result;
         }
         return null;
