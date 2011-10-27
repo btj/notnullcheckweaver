@@ -1,0 +1,8 @@
+To build this project:
+- Install Ant
+- Run fetch.xml in Ant's home directory, with
+
+    ant -f fetch.xml -Ddest=system
+
+  to download JUnit into Ant's lib directory.
+- Run Ant

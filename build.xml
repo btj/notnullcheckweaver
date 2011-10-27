@@ -1,0 +1,58 @@
+<project default="all">
+  
+  <available file="asm-4.0_RC2/lib/all/asm-all-4.0_RC2.jar" property="have_asmjar"/>
+  
+  <uptodate property="have_jar" targetfile="notnullcheckweaver.jar">
+    <srcfiles dir="src"/>
+  </uptodate>
+  
+  <uptodate property="have_javadoc" targetfile="docs">
+    <srcfiles dir="src"/>
+  </uptodate>
+  
+  <mkdir dir="bin"/>
+  
+  <target name="asm" unless="have_asmjar">
+    <get src="http://download.forge.objectweb.org/asm/asm-4.0_RC2-bin.zip" dest="asm-4.0_RC2-bin.zip" usetimestamp="true" skipexisting="true"/>
+    <unzip src="asm-4.0_RC2-bin.zip" dest="." overwrite="false"/>
+  </target>
+  
+  <target name="jar" depends="asm" unless="have_jar">
+    <javac srcdir="src" destdir="bin" classpath="asm-4.0_RC2/lib/all/asm-all-4.0_RC2.jar"/>
+    <jar destfile="notnullcheckweaver.jar">
+      <manifest>
+        <attribute name="Premain-Class" value="notnullcheckweaver.NotNullCheckWeaver"/>
+      </manifest>
+      <fileset includes="notnullcheckweaver/*" dir="bin"/>
+      <zipfileset excludes="META-INF/*" src="asm-4.0_RC2/lib/all/asm-all-4.0_RC2.jar"/>
+    </jar>
+    <junit fork="yes" haltonfailure="yes">
+      <classpath>
+        <pathelement location="bin"/>
+      </classpath>
+      <jvmarg value="-javaagent:notnullcheckweaver.jar=test"/>
+      <formatter type="plain" usefile="false"/>
+      <batchtest>
+        <fileset dir="src">
+          <include name="test/*Test*.java"/>
+        </fileset>
+      </batchtest>
+    </junit>
+  </target>
+  
+  <target name="javadoc" unless="have_javadoc">
+    <delete dir="docs"/>
+    <javadoc sourcepath="src" excludepackagenames="test.*" destdir="docs" windowtitle="Not-Null Check Weaver API">
+      <link href="http://download.oracle.com/javase/7/docs/api/"/>
+    </javadoc>
+  </target>
+  
+  <target name="all" depends="jar,javadoc"/>
+  
+  <target name="clean">
+    <delete dir="bin"/>
+    <delete dir="docs"/>
+    <delete file="notnullcheckweaver.jar"/>
+  </target>
+  
+</project>
