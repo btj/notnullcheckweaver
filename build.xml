@@ -1,4 +1,4 @@
-<project default="all">
+<project default="dist">
   
   <available file="asm-4.0_RC2/lib/all/asm-all-4.0_RC2.jar" property="have_asmjar"/>
   
@@ -47,12 +47,17 @@
     </javadoc>
   </target>
   
-  <target name="all" depends="jar,javadoc"/>
+  <target name="dist" depends="jar,javadoc">
+    <zip destfile="notnullcheckweaver.zip">
+      <fileset dir="." includes="notnullcheckweaver.jar,docs/*"/>
+    </zip>
+  </target>
   
   <target name="clean">
     <delete dir="bin"/>
     <delete dir="docs"/>
     <delete file="notnullcheckweaver.jar"/>
+    <delete file="notnullcheckweaver.zip"/>
   </target>
   
 </project>
