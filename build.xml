@@ -49,7 +49,7 @@
   
   <target name="dist" depends="jar,javadoc">
     <zip destfile="notnullcheckweaver.zip">
-      <fileset dir="." includes="notnullcheckweaver.jar,docs/*"/>
+      <fileset dir="." includes="notnullcheckweaver.jar,License.txt,docs/*"/>
     </zip>
   </target>
   
