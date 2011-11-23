@@ -34,9 +34,14 @@ public final class NotNullCheckWeaver {
      */
     public static void premain(String agentArgs, Instrumentation inst) {
         File baseDir = getJarBaseDir();
+        File weaverJarFile = new File(baseDir, "notnullcheckweaver-weaver.jar");
+        if (!weaverJarFile.exists())
+            throw new RuntimeException(
+                "File '"+weaverJarFile+"' does not exist. "+
+                "Please put notnullcheckweaver-weaver.jar in the same directory as notnullcheckweaver.jar.");
         URL weaverJar;
         try {
-            weaverJar = new File(baseDir, "notnullcheckweaver-weaver.jar").toURI().toURL();
+            weaverJar = weaverJarFile.toURI().toURL();
         } catch (MalformedURLException e) {
             throw new RuntimeException(e);
         }
