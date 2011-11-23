@@ -18,7 +18,7 @@
   </target>
   
   <target name="jar" depends="asm" unless="have_jar">
-    <javac srcdir="src" destdir="bin" classpath="asm-4.0_RC2/lib/all/asm-all-4.0_RC2.jar"/>
+    <javac srcdir="src" destdir="bin" classpath="asm-4.0_RC2/lib/all/asm-all-4.0_RC2.jar" includeAntRuntime="true" />
     <jar destfile="notnullcheckweaver.jar">
       <manifest>
         <attribute name="Premain-Class" value="notnullcheckweaver.NotNullCheckWeaver"/>
@@ -42,7 +42,7 @@
   
   <target name="javadoc" unless="have_javadoc">
     <delete dir="docs"/>
-    <javadoc sourcepath="src" excludepackagenames="test.*" destdir="docs" windowtitle="Not-Null Check Weaver API">
+    <javadoc sourcepath="src" excludepackagenames="test.*" destdir="docs" windowtitle="Not-Null Check Weaver API" classpath="asm-4.0_RC2/lib/all/asm-all-4.0_RC2.jar">
       <link href="http://download.oracle.com/javase/7/docs/api/"/>
     </javadoc>
   </target>
