@@ -66,6 +66,7 @@ public class BasicTest {
 		
 		try {
 			new Foo().baz(null);
+			Assert.fail();
 		} catch (ArgumentNotNullCheckException e) {
 			Assert.assertEquals(0, e.getArgumentIndex());
 		}
