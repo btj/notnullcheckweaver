@@ -98,35 +98,45 @@ class NotNullClassFileTransformer implements ClassFileTransformer {
     public byte[] transform(ClassLoader loader, String className,
             Class<?> classBeingRedefined, ProtectionDomain protectionDomain,
             byte[] classfileBuffer) throws IllegalClassFormatException {
-        if (className.endsWith("package-info"))
-            return null; // Avoid loops
-        if (className.startsWith(classNamePrefix)) {
-            boolean packageNotNull = isPackageNotNull(loader, getPackageName(className));
-            NotNullClassInspector inspector = new NotNullClassInspector(packageNotNull);
-            {
-                ClassReader reader1 = new ClassReader(classfileBuffer);
-                reader1.accept(inspector, ClassReader.SKIP_DEBUG|ClassReader.SKIP_FRAMES|ClassReader.SKIP_CODE);
+        try {
+            if (className.endsWith("package-info"))
+                return null; // Avoid loops
+            if (className.startsWith(classNamePrefix)) {
+                boolean packageNotNull = isPackageNotNull(loader, getPackageName(className));
+                NotNullClassInspector inspector = new NotNullClassInspector(packageNotNull);
+                {
+                    ClassReader reader1 = new ClassReader(classfileBuffer);
+                    reader1.accept(inspector, ClassReader.SKIP_DEBUG|ClassReader.SKIP_FRAMES|ClassReader.SKIP_CODE);
+                }
+                
+                ClassReader reader2 = new ClassReader(classfileBuffer);
+                ClassWriter writer = new ClassWriter(0);
+                ClassVisitor adapter = new NotNullClassAdapter(writer, inspector);
+                reader2.accept(adapter, 0);
+                byte[] result = writer.toByteArray();
+                /*
+                try {
+                    FileOutputStream fos = new FileOutputStream(className.replace('/', '_') + ".class");
+                    fos.write(result);
+                    fos.close();
+                } catch (FileNotFoundException e) {
+                    throw new RuntimeException(e);
+                } catch (IOException e) {
+                    throw new RuntimeException(e);
+                }
+                */
+                return result;
             }
+            return null;
             
-            ClassReader reader2 = new ClassReader(classfileBuffer);
-            ClassWriter writer = new ClassWriter(0);
-            ClassVisitor adapter = new NotNullClassAdapter(writer, inspector);
-            reader2.accept(adapter, 0);
-            byte[] result = writer.toByteArray();
-            /*
-            try {
-                FileOutputStream fos = new FileOutputStream(className.replace('/', '_') + ".class");
-                fos.write(result);
-                fos.close();
-            } catch (FileNotFoundException e) {
-                throw new RuntimeException(e);
-            } catch (IOException e) {
-                throw new RuntimeException(e);
-            }
-            */
-            return result;
+        // The JVM silently drops exceptions thrown by this method.
+        } catch (RuntimeException e) {
+            e.printStackTrace();
+            throw e;
+        } catch (Error e) {
+            e.printStackTrace();
+            throw e;
         }
-        return null;
     }
 }
 
