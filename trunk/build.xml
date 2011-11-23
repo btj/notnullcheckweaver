@@ -2,6 +2,10 @@
   
   <available file="asm-4.0_RC2/lib/all/asm-all-4.0_RC2.jar" property="have_asmjar"/>
   
+  <uptodate property="have_weaver_jar" targetfile="notnullcheckweaver-weaver.jar">
+    <srcfiles dir="src2"/>
+  </uptodate>
+  
   <uptodate property="have_jar" targetfile="notnullcheckweaver.jar">
     <srcfiles dir="src"/>
   </uptodate>
@@ -12,28 +16,43 @@
   
   <mkdir dir="bin"/>
   
+  <mkdir dir="bin2"/>
+  
+  <mkdir dir="testbin"/>
+  
   <target name="asm" unless="have_asmjar">
     <get src="http://download.forge.objectweb.org/asm/asm-4.0_RC2-bin.zip" dest="asm-4.0_RC2-bin.zip" usetimestamp="true" skipexisting="true"/>
     <unzip src="asm-4.0_RC2-bin.zip" dest="." overwrite="false"/>
   </target>
   
-  <target name="jar" depends="asm" unless="have_jar">
-    <javac srcdir="src" destdir="bin" classpath="asm-4.0_RC2/lib/all/asm-all-4.0_RC2.jar" includeAntRuntime="true" />
+  <target name="weaver_jar" depends="asm" unless="have_weaver_jar">
+    <javac srcdir="src2" destdir="bin2" classpath="asm-4.0_RC2/lib/all/asm-all-4.0_RC2.jar" includeAntRuntime="false" />
+    <jar destfile="notnullcheckweaver-weaver.jar">
+      <fileset dir="bin2"/>
+      <zipfileset excludes="META-INF/*" src="asm-4.0_RC2/lib/all/asm-all-4.0_RC2.jar"/>
+    </jar>
+  </target>
+  
+  <target name="jar" depends="asm,weaver_jar" unless="have_jar">
+    <javac srcdir="src" destdir="bin" includeAntRuntime="false" />
     <jar destfile="notnullcheckweaver.jar">
       <manifest>
         <attribute name="Premain-Class" value="notnullcheckweaver.NotNullCheckWeaver"/>
       </manifest>
-      <fileset includes="notnullcheckweaver/*" dir="bin"/>
-      <zipfileset excludes="META-INF/*" src="asm-4.0_RC2/lib/all/asm-all-4.0_RC2.jar"/>
+      <fileset dir="bin"/>
     </jar>
+  </target>
+  
+  <target name="test" depends="jar">
+    <javac srcdir="test" destdir="testbin" classpath="notnullcheckweaver.jar" includeAntRuntime="true" />
     <junit fork="yes" haltonfailure="yes">
       <classpath>
-        <pathelement location="bin"/>
+        <pathelement location="testbin"/>
       </classpath>
       <jvmarg value="-javaagent:notnullcheckweaver.jar=test"/>
       <formatter type="plain" usefile="false"/>
       <batchtest>
-        <fileset dir="src">
+        <fileset dir="test">
           <include name="test/*Test*.java"/>
         </fileset>
       </batchtest>
@@ -47,14 +66,17 @@
     </javadoc>
   </target>
   
-  <target name="dist" depends="jar,javadoc">
+  <target name="dist" depends="jar,test,javadoc">
     <zip destfile="notnullcheckweaver.zip">
-      <fileset dir="." includes="notnullcheckweaver.jar,License.txt,docs/*"/>
+      <fileset dir="." includes="notnullcheckweaver.jar,notnullcheckweaver-weaver.jar,License.txt,docs/*"/>
     </zip>
   </target>
   
   <target name="clean">
+    <delete dir="bin2"/>
+    <delete dir="notnullcheckweaver-weaver.jar"/>
     <delete dir="bin"/>
+    <delete dir="testbin"/>
     <delete dir="docs"/>
     <delete file="notnullcheckweaver.jar"/>
     <delete file="notnullcheckweaver.zip"/>
