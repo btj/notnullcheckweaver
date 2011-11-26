@@ -1,0 +1,2 @@
+@notnullcheckweaver.NotNull
+package cofojatest;
