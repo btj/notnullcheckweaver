@@ -72,6 +72,31 @@
     </zip>
   </target>
   
+  <mkdir dir="test-cofojabin"/>
+  
+  <target name="cofoja-test" depends="jar">
+    <javac srcdir="test-cofoja" destdir="test-cofojabin" includeAntRuntime="true">
+      <classpath>
+        <pathelement location="cofoja-1.0-r139.jar"/>
+        <pathelement location="notnullcheckweaver.jar"/>
+      </classpath>
+      <compilerarg line="-processor com.google.java.contract.core.apt.AnnotationProcessor"/>
+    </javac>
+    <junit fork="yes" haltonfailure="yes">
+      <classpath>
+        <pathelement location="test-cofojabin"/>
+      </classpath>
+      <jvmarg value="-javaagent:cofoja-1.0-r139.jar"/>
+      <jvmarg value="-javaagent:notnullcheckweaver.jar=cofojatest"/>
+      <formatter type="plain" usefile="false"/>
+      <batchtest>
+        <fileset dir="test-cofoja">
+          <include name="cofojatest/*Test*.java"/>
+        </fileset>
+      </batchtest>
+    </junit>
+  </target>
+  
   <target name="clean">
     <delete dir="bin2"/>
     <delete dir="notnullcheckweaver-weaver.jar"/>
@@ -80,6 +105,7 @@
     <delete dir="docs"/>
     <delete file="notnullcheckweaver.jar"/>
     <delete file="notnullcheckweaver.zip"/>
+    <delete dir="test-cofojabin"/>
   </target>
   
 </project>
