@@ -26,11 +26,7 @@ public final class NotNullCheckWeaver {
      * Called by the JVM when the weaver is used as a Java agent.
      * 
      * To use the weaver, start the JVM as follows:
-     * <pre>java -javaagent:notnullcheckweaver.jar=my.root.package my.root.package.MyMainClass</pre>
-     * If started this way, the weaver instruments all classes in the specified package
-     * and its subpackages.
-     * 
-     * Note: the weaver ignores package annotations for packages not below the specified package. 
+     * <pre>java -javaagent:notnullcheckweaver.jar mypackage.MyMainClass</pre>
      */
     public static void premain(String agentArgs, Instrumentation inst) {
         File baseDir = getJarBaseDir();
