@@ -26,7 +26,7 @@
   </target>
   
   <target name="weaver_jar" depends="asm" unless="have_weaver_jar">
-    <javac srcdir="src2" destdir="bin2" classpath="asm-4.0_RC2/lib/all/asm-all-4.0_RC2.jar" includeAntRuntime="false" />
+    <javac srcdir="src2" debug="true" destdir="bin2" classpath="asm-4.0_RC2/lib/all/asm-all-4.0_RC2.jar" includeAntRuntime="false" />
     <jar destfile="notnullcheckweaver-weaver.jar">
       <fileset dir="bin2"/>
       <zipfileset excludes="META-INF/*" src="asm-4.0_RC2/lib/all/asm-all-4.0_RC2.jar"/>
@@ -34,7 +34,7 @@
   </target>
   
   <target name="jar" depends="asm,weaver_jar" unless="have_jar">
-    <javac srcdir="src" destdir="bin" includeAntRuntime="false" />
+    <javac srcdir="src" debug="true" destdir="bin" includeAntRuntime="false" />
     <jar destfile="notnullcheckweaver.jar">
       <manifest>
         <attribute name="Premain-Class" value="notnullcheckweaver.NotNullCheckWeaver"/>
@@ -49,7 +49,7 @@
       <classpath>
         <pathelement location="testbin"/>
       </classpath>
-      <jvmarg value="-javaagent:notnullcheckweaver.jar=test"/>
+      <jvmarg value="-javaagent:notnullcheckweaver.jar"/>
       <formatter type="plain" usefile="false"/>
       <batchtest>
         <fileset dir="test">
@@ -86,8 +86,9 @@
       <classpath>
         <pathelement location="test-cofojabin"/>
       </classpath>
+      <!-- <jvmarg value="-Dcom.google.java.contract.dump=dump"/> -->
       <jvmarg value="-javaagent:cofoja-1.0-r139.jar"/>
-      <jvmarg value="-javaagent:notnullcheckweaver.jar=cofojatest"/>
+      <jvmarg value="-javaagent:notnullcheckweaver.jar"/>
       <formatter type="plain" usefile="false"/>
       <batchtest>
         <fileset dir="test-cofoja">
@@ -99,7 +100,7 @@
   
   <target name="clean">
     <delete dir="bin2"/>
-    <delete dir="notnullcheckweaver-weaver.jar"/>
+    <delete file="notnullcheckweaver-weaver.jar"/>
     <delete dir="bin"/>
     <delete dir="testbin"/>
     <delete dir="docs"/>

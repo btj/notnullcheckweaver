@@ -34,7 +34,7 @@ public final class NotNullCheckWeaver {
     static final String nullableAnnotationDesc = classNameDesc(nullableAnnotationClassName);
     
     public static void premain(String agentArgs, Instrumentation inst) {
-        final String classNamePrefix = agentArgs;
+        final String classNamePrefix = agentArgs == null ? "" : agentArgs;
         inst.addTransformer(new NotNullClassFileTransformer(classNamePrefix));
     }
 }
@@ -55,7 +55,7 @@ class NotNullClassFileTransformer implements ClassFileTransformer {
     }
     
     boolean isPackageNotNull(ClassLoader loader, String packageName) {
-        if (packageName == null)
+        if (packageName == null || loader == null)
             return false;
         if (!packageName.startsWith(classNamePrefix))
             return false;
