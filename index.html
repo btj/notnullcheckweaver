@@ -1,0 +1,153 @@
+<!doctype html>
+<html>
+  <head>
+    <meta charset="utf-8">
+    <meta http-equiv="X-UA-Compatible" content="chrome=1">
+    <title>notnullcheckweaver by btj</title>
+
+    <link rel="stylesheet" href="stylesheets/styles.css">
+    <link rel="stylesheet" href="stylesheets/github-light.css">
+    <meta name="viewport" content="width=device-width">
+    <!--[if lt IE 9]>
+    <script src="//html5shiv.googlecode.com/svn/trunk/html5.js"></script>
+    <![endif]-->
+  </head>
+  <body>
+    <div class="wrapper">
+      <header>
+        <h1>notnullcheckweaver</h1>
+        <p>Dynamically enforces @NotNull annotations in Java programs through run-time bytecode instrumentation</p>
+
+        <p class="view"><a href="https://github.com/btj/notnullcheckweaver">View the Project on GitHub <small>btj/notnullcheckweaver</small></a></p>
+
+
+        <ul>
+          <li><a href="https://github.com/btj/notnullcheckweaver/zipball/master">Download <strong>ZIP File</strong></a></li>
+          <li><a href="https://github.com/btj/notnullcheckweaver/tarball/master">Download <strong>TAR Ball</strong></a></li>
+          <li><a href="https://github.com/btj/notnullcheckweaver">View On <strong>GitHub</strong></a></li>
+        </ul>
+      </header>
+      <section>
+        <p>This project delivers a Java agent (i.e. a bytecode transformer that is executed on the fly by the JVM as it loads classes) that adds run-time checks that enforce <code>@NotNull</code> annotations on parameters, method results, and fields.</p>
+
+<h1>
+<a id="motivation" class="anchor" href="#motivation" aria-hidden="true"><span aria-hidden="true" class="octicon octicon-link"></span></a>Motivation</h1>
+
+<p>The programming style where the programmer inserts thorough validity checks of parameter values at the top of each method (or at least those that constitute the exported interface of the module) is a very beneficial one. It helps reduce the distance between the source location where an error manifests itself and where it originates. Also, it helps the explicit separation of responsibilities and blame assignment between the modules of the system.</p>
+
+<p>Unfortunately, due to the fact that every value of reference type in Java can be null, adhering to this style means inserting a large number of null checks throughout the program. For example:</p>
+
+<div class="highlight highlight-source-java"><pre><span class="pl-k">public</span> <span class="pl-k">class</span> <span class="pl-en">MyClass</span> {
+
+    <span class="pl-c">/** Frobs the specified foo, bar, and baz.</span>
+<span class="pl-c">      *</span>
+<span class="pl-c">      * o1 and o2 should not be null.</span>
+<span class="pl-c">      */</span>
+    <span class="pl-k">public</span> <span class="pl-k">void</span> <span class="pl-en">frob</span>(<span class="pl-smi">Foo</span> <span class="pl-v">o1</span>, <span class="pl-smi">Bar</span> <span class="pl-v">o2</span>, <span class="pl-smi">Baz</span> <span class="pl-v">o3</span>) {
+        <span class="pl-k">if</span> (o1 <span class="pl-k">==</span> <span class="pl-c1">null</span>) <span class="pl-k">throw</span> <span class="pl-k">new</span> <span class="pl-smi">IllegalArgumentException</span>(<span class="pl-s"><span class="pl-pds">"</span>o1 is null<span class="pl-pds">"</span></span>);
+        <span class="pl-k">if</span> (o2 <span class="pl-k">==</span> <span class="pl-c1">null</span>) <span class="pl-k">throw</span> <span class="pl-k">new</span> <span class="pl-smi">IllegalArgumentException</span>(<span class="pl-s"><span class="pl-pds">"</span>o2 is null<span class="pl-pds">"</span></span>);
+        <span class="pl-c">// do the actual frobbing</span>
+    }
+
+}</pre></div>
+
+<p>By using <code>notnullcheckweaver</code>, you can reduce this code to the following:</p>
+
+<div class="highlight highlight-source-java"><pre>@<span class="pl-smi">NotNull</span>
+<span class="pl-k">public</span> <span class="pl-k">class</span> <span class="pl-en">MyClass</span> {
+
+    <span class="pl-c">/** Frobs the specified foo, bar, and baz. */</span>
+    <span class="pl-k">public</span> <span class="pl-k">void</span> <span class="pl-en">frob</span>(<span class="pl-smi">Foo</span> <span class="pl-v">o1</span>, <span class="pl-smi">Bar</span> <span class="pl-v">o2</span>, <span class="pl-k">@Nullable</span> <span class="pl-smi">Baz</span> <span class="pl-v">o3</span>) {
+        <span class="pl-c">// do the actual frobbing</span>
+    }
+
+}</pre></div>
+
+<p>Besides reducing boilerplate, this approach appropriately draws attention to nullable values, which deserve special attention, rather than the harmless not-null values.</p>
+
+<p>To achieve this benefit, it would be sufficient if <code>notnullcheckweaver</code> checked just argument values. In fact, it checks also method results and field values. This yields the added benefit that also for these values one can assume, unless stated otherwise explicitly, that these values are never null.</p>
+
+<h1>
+<a id="basic-walkthrough" class="anchor" href="#basic-walkthrough" aria-hidden="true"><span aria-hidden="true" class="octicon octicon-link"></span></a>Basic walkthrough</h1>
+
+<p>Here is an example program that uses <code>@NotNull</code>:</p>
+
+<div class="highlight highlight-source-java"><pre><span class="pl-k">package</span> <span class="pl-smi">mypackage</span>;
+
+<span class="pl-k">import</span> <span class="pl-smi">notnullcheckweaver.NotNull</span>;
+<span class="pl-k">import</span> <span class="pl-smi">notnullcheckweaver.ArgumentNotNullCheckException</span>;
+
+@<span class="pl-smi">NotNull</span>
+<span class="pl-k">public</span> <span class="pl-k">class</span> <span class="pl-en">MyProgram</span> {
+
+    <span class="pl-k">private</span> <span class="pl-k">static</span> <span class="pl-k">void</span> <span class="pl-en">foo</span>(<span class="pl-smi">Object</span> <span class="pl-v">object</span>) {}
+
+    <span class="pl-k">public</span> <span class="pl-k">static</span> <span class="pl-k">void</span> <span class="pl-en">main</span>(<span class="pl-k">String</span>[] <span class="pl-v">args</span>) {
+        <span class="pl-k">try</span> {
+            foo(<span class="pl-c1">null</span>);
+            <span class="pl-smi">System</span><span class="pl-k">.</span>out<span class="pl-k">.</span>println(<span class="pl-s"><span class="pl-pds">"</span>It doesn't work :-(<span class="pl-pds">"</span></span>);
+        } <span class="pl-k">catch</span> (<span class="pl-smi">ArgumentNotNullCheckException</span> e) {
+            <span class="pl-smi">System</span><span class="pl-k">.</span>out<span class="pl-k">.</span>println(<span class="pl-s"><span class="pl-pds">"</span>It works! :-)<span class="pl-pds">"</span></span>);
+        }
+    }
+
+}</pre></div>
+
+<p>Compile this program as follows:</p>
+
+<pre><code>javac -classpath notnullcheckweaver.jar mypackage/MyProgram.java
+</code></pre>
+
+<p>Run it as follows:</p>
+
+<pre><code>java -javaagent:notnullcheckweaver.jar mypackage.MyProgram
+</code></pre>
+
+<p>You should get the following output:</p>
+
+<pre><code>It works! :-)
+</code></pre>
+
+<h1>
+<a id="further-info" class="anchor" href="#further-info" aria-hidden="true"><span aria-hidden="true" class="octicon octicon-link"></span></a>Further info</h1>
+
+<p>A variable (parameter, method result, or field) is considered <code>@NotNull</code> either if it is marked as <code>@NotNull</code> directly, or if an enclosing element (class or package) is marked as <code>@NotNull</code> and no closer enclosing element is marked as <code>@Nullable</code>. For the purposes of this definition, package <code>foo</code> is considered to enclose package <code>foo.bar</code>.</p>
+
+<p>The most convenient approach is to mark your toplevel package as <code>@NotNull</code>, and to put <code>@Nullable</code> on the individual parameters, method results, and fields for which <code>null</code> is a valid value.</p>
+
+<p>For example:</p>
+
+<div class="highlight highlight-source-java"><pre><span class="pl-c">// mypackage/package-info.java</span>
+
+@<span class="pl-smi">NotNull</span>
+<span class="pl-k">package</span> <span class="pl-smi">mypackage</span>;
+
+<span class="pl-k">import</span> <span class="pl-smi">notnullcheckweaver.NotNull</span>;</pre></div>
+
+<div class="highlight highlight-source-java"><pre><span class="pl-c">// mypackage/mysubpackage/MyClass.java</span>
+
+<span class="pl-k">package</span> <span class="pl-smi">mypackage.mysubpackage</span>;
+
+<span class="pl-k">import</span> <span class="pl-smi">notnullcheckweaver.Nullable</span>;
+
+<span class="pl-k">public</span> <span class="pl-k">class</span> <span class="pl-en">MyClass</span> {
+
+    <span class="pl-k">public</span> <span class="pl-k">static</span> <span class="pl-k">void</span> <span class="pl-en">myMethod</span>(<span class="pl-smi">MyClass</span> <span class="pl-v">foo</span>, <span class="pl-k">@Nullable</span> <span class="pl-smi">MyClass</span> <span class="pl-v">bar</span>) {
+        <span class="pl-c">// ...</span>
+    }
+
+}</pre></div>
+
+<p>In the above example, due to the <code>@NotNull</code> annotation on package <code>mypackage</code>, parameter <code>foo</code> of method <code>myMethod</code> is considered <code>@NotNull</code> and the weaver will insert a not-null check for this parameter at the top of the bytecode of <code>myMethod</code> when <code>MyClass</code> is loaded.</p>
+
+<p>See also the documentation in the distribution, and the test cases in the source repository.</p>
+      </section>
+      <footer>
+        <p>This project is maintained by <a href="https://github.com/btj">btj</a></p>
+        <p><small>Hosted on GitHub Pages &mdash; Theme by <a href="https://github.com/orderedlist">orderedlist</a></small></p>
+      </footer>
+    </div>
+    <script src="javascripts/scale.fix.js"></script>
+    
+  </body>
+</html>
